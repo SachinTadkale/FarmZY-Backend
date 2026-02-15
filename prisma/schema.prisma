@@ -54,6 +54,12 @@ enum PaymentReviewStatus {
   FLAGGED
 }
 
+enum OtpType {
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  PASSWORD_RESET
+}
+
 //////////////////////
 // MODELS
 //////////////////////
@@ -72,7 +78,7 @@ model User {
   notifications      Notification[]
   payments           Payment[]
   bankDetails        BankDetails[]
-  products           Product[]   // ← added
+  products           Product[]   
 }
 
 
@@ -187,4 +193,16 @@ model Transaction {
 
   bankDetails     BankDetails  @relation(fields: [accountNumber], references: [accountNumber])
   payment         Payment      @relation(fields: [paymentId], references: [paymentId])
+}
+
+model Otp {
+  otpId       String   @id @default(uuid())
+  userId      String
+  code        String
+  type        OtpType
+  isUsed      Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [user_id])
 }
