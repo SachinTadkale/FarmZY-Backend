@@ -1,0 +1,85 @@
+import prisma from "../../config/prisma";
+import { sendSMS } from "../../lib/fast2sms";
+
+// Get pending KYC users
+export const getPendingKyc = async () => {
+  return prisma.user.findMany({
+    where: {
+      verificationStatus: "PENDING",
+      kyc: {
+        isNot: null,
+      },
+    },
+    include: {
+      kyc: true,
+    },
+  });
+};
+
+// Approve user
+export const verifyUser = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  if (user.verificationStatus === "APPROVED") {
+    throw new Error("User already approved");
+  }
+
+  await prisma.user.update({
+    where: { user_id: userId },
+    data: {
+      verificationStatus: "APPROVED",
+    },
+  });
+
+  const message =
+    "Your Farmzy account has been verified. You can now login.";
+
+  await prisma.notification.create({
+    data: {
+      userId,
+      message,
+    },
+  });
+
+  await sendSMS(user.phone_no, message);
+
+  return { message: "User approved successfully" };
+};
+
+// Reject user
+export const rejectUser = async (
+  userId: string,
+  reason?: string
+) => {
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  await prisma.user.update({
+    where: { user_id: userId },
+    data: {
+      verificationStatus: "REJECTED",
+    },
+  });
+
+  const message = reason
+    ? `Your Farmzy account verification was rejected. Reason: ${reason}`
+    : "Your Farmzy account verification was rejected.";
+
+  await prisma.notification.create({
+    data: {
+      userId,
+      message,
+    },
+  });
+
+  await sendSMS(user.phone_no, message);
+
+  return { message: "User rejected successfully" };
+};

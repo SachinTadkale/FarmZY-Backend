@@ -1,65 +1,77 @@
 import bcrypt from "bcrypt";
 import prisma from "../../config/prisma";
-import { email } from "zod";
+import { generateToken } from "../../lib/jwt";
 
-type RegisterInput = {
-    name:string;
-    phone_no:string;
-    password:string;
-    address:string;
-    email:string;
+export const register = async (data: any) => {
+  const existingEmail = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
+
+  if (existingEmail) {
+    throw new Error("Email already registered");
+  }
+
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      name: data.name,
+      phone_no: data.phone_no,
+      password: hashedPassword,
+      address: data.address,
+      email: data.email,
+      gender: data.gender,
+      verificationStatus: "PENDING",
+      role: "USER",
+    },
+  });
+
+  const token = generateToken({
+    userId: user.user_id,
+    role: user.role,
+  });
+
+  return { token, user };
 };
 
-// type loginInput ={
-//     email:
-// };
+export const login = async (data: any) => {
+  const user = await prisma.user.findUnique({
+    where: { email: data.email },
+    include: { kyc: true },
+  });
 
-export const register = async(data:RegisterInput) =>{
-    
-    // Check Duplicate Email
-    const existingEmail = await prisma.user.findUnique({
-        where: {email: data.email}
+  if (!user) throw new Error("Invalid credentials");
+
+  const isMatch = await bcrypt.compare(data.password, user.password);
+  if (!isMatch) throw new Error("Invalid credentials");
+
+  if (user.role === "ADMIN") {
+    const token = generateToken({
+      userId: user.user_id,
+      role: user.role,
     });
-    if(existingEmail){
-        throw new Error("Email already Registered");
-    }
-    
-    // Check Duplicate Phone Number
+    return { token, user };
+  }
 
-    const existingPhone = await prisma.user.findFirst({
-        where:{phone_no:data.phone_no}
+  if (!user.kyc) {
+    throw new Error("Please submit your documents to continue");
+  }
+
+  if (user.verificationStatus === "PENDING") {
+    throw new Error("Your documents are under review.");
+  }
+
+  if (user.verificationStatus === "REJECTED") {
+    throw new Error("Your documents were rejected.");
+  }
+
+  if (user.verificationStatus === "APPROVED") {
+    const token = generateToken({
+      userId: user.user_id,
+      role: user.role,
     });
-    if(existingPhone){
-        throw new Error("Phone Number Already Registered");
-    }
+    return { token, user };
+  }
 
-    // Hash Password
-    const HashPassword = await bcrypt.hash(data.password,10);
-
-    //create user safely 
-    const user = await prisma.user.create({
-        data:{
-            name: data.name,
-            phone_no: data.phone_no,
-            email: data.email,
-            address: data.address,
-            password: data.password,
-
-            verficationStatus: "PENDING"
-        },
-        select:{
-            user_id:true,
-            name:true,
-            email:true,
-            phone_no:true,
-            verificationStatus: true,    
-            created_at:true,
-
-        }
-    });
-    return user;
-}
-
-export const login = async(data:any) =>{
-  
-}
+  throw new Error("Unable to login");
+};

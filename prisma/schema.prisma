@@ -8,183 +8,177 @@ generator client {
 }
 
 //////////////////////
-// ENUMS
-//////////////////////
-
-enum VerificationStatus {
-  APPROVED
-  REJECTED
-  PENDING
-}
-
-enum ListingType {
-  SALE
-  REQUIRED
-}
-
-enum ListingStatus {
-  ACTIVE
-  CLOSED
-}
-
-enum PaymentStatus {
-  INITIATED
-  PROCESSING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum OrderStatus {
-  CREATED
-  PROCESSING
-  DELIVERED
-  CANCELED
-}
-
-enum BankAccountType {
-  SAVING
-  CURRENT
-}
-
-enum PaymentReviewStatus {
-  PENDING
-  REPORTED
-  CONFIRMED
-  FLAGGED
-}
-
-//////////////////////
 // MODELS
 //////////////////////
 
 model User {
-  user_id            String              @id @default(uuid())
+  user_id            String   @id @default(uuid())
   name               String
-  phone_no           String
+  phone_no           String   @unique
   password           String
   address            String
-  verificationStatus VerificationStatus  @default(PENDING)
-  email              String              @unique
-  createdAt          DateTime            @default(now())
+  email              String?  @unique
+  gender             String?
+  role               String   @default("USER")
+  verificationStatus String   @default("PENDING")
+  registrationStep   Int      @default(1)
+  createdAt          DateTime @default(now())
 
-  listings           MarketListing[]
-  notifications      Notification[]
-  payments           Payment[]
-  bankDetails        BankDetails[]
-  products           Product[]   // ← added
+  farmDetails   FarmDetails?
+  listings      MarketListing[]
+  notifications Notification[]
+  payments      Payment[]
+  bankDetails   BankDetails[]
+  products      Product[]
+  otps          Otp[]
+  kyc           Kyc?
 }
 
+model FarmDetails {
+  id       String @id @default(uuid())
+  userId   String @unique
+  state    String
+  district String
+  village  String
+  pincode  String
+  landArea Float?
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+}
 
 model Company {
-  companyId        String              @id @default(uuid())
-  companyName      String
-  registrationNo   String              @unique
-  hqLocation       String
-  gstNumber        String              @unique
-  verification     VerificationStatus  @default(PENDING)
-  createdAt        DateTime            @default(now())
+  companyId      String   @id @default(uuid())
+  companyName    String
+  registrationNo String   @unique
+  hqLocation     String
+  gstNumber      String   @unique
+  verification   String   @default("PENDING")
+  createdAt      DateTime @default(now())
 
-  inventories      Inventory[]
-  orders           Order[]
-  payments         Payment[]
+  inventories Inventory[]
+  orders      Order[]
+  payments    Payment[]
 }
 
 model Inventory {
-  stockId      String   @id @default(uuid())
-  companyId    String
-  stockName    String
-  stockWeight  Float
-  stockPrice   Float
+  stockId     String @id @default(uuid())
+  companyId   String
+  stockName   String
+  stockWeight Float
+  stockPrice  Float
 
-  company      Company  @relation(fields: [companyId], references: [companyId])
+  company Company @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
 }
 
 model Product {
-  productId      String   @id @default(uuid())
-  productName    String
-  category       String
-  unit           String
-  productImage   String?
-  userId         String
+  productId    String  @id @default(uuid())
+  productName  String
+  category     String
+  unit         String
+  productImage String?
+  userId       String
 
-  user           User     @relation(fields: [userId], references: [user_id])
-  listings       MarketListing[]
+  user     User            @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  listings MarketListing[]
 }
 
-
 model MarketListing {
-  listingId     String         @id @default(uuid())
-  sellerId      String
-  productId     String
-  listingType   ListingType
-  status        ListingStatus  @default(ACTIVE)
-  createdAt     DateTime       @default(now())
+  listingId   String   @id @default(uuid())
+  sellerId    String
+  productId   String
+  listingType String
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
 
-  seller        User           @relation(fields: [sellerId], references: [user_id])
-  product       Product        @relation(fields: [productId], references: [productId])
-  orders        Order[]
+  seller  User    @relation(fields: [sellerId], references: [user_id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  orders  Order[]
 }
 
 model Order {
-  orderId        String        @id @default(uuid())
-  listingId      String
-  companyId      String
-  finalPrice     Float
-  paymentStatus  PaymentStatus @default(INITIATED)
-  orderStatus    OrderStatus   @default(CREATED)
-  createdAt      DateTime      @default(now())
+  orderId       String   @id @default(uuid())
+  listingId     String
+  companyId     String
+  finalPrice    Float
+  paymentStatus String   @default("INITIATED")
+  orderStatus   String   @default("CREATED")
+  createdAt     DateTime @default(now())
 
-  listing        MarketListing @relation(fields: [listingId], references: [listingId])
-  company        Company       @relation(fields: [companyId], references: [companyId])
-  payments       Payment[]
+  listing  MarketListing @relation(fields: [listingId], references: [listingId], onDelete: Cascade)
+  company  Company       @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  payments Payment[]
 }
 
 model Notification {
-  nId        String   @id @default(uuid())
-  userId     String
-  message    String
-  createdAt  DateTime @default(now())
+  nId       String   @id @default(uuid())
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [user_id])
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
 }
 
 model Payment {
-  paymentId        String              @id @default(uuid())
-  orderId          String
-  companyId        String
-  userId           String
-  grossAmount      Float
-  platformFee      Float
-  netAmount        Float
-  paymentStatus    PaymentReviewStatus @default(PENDING)
-  bankReferenceNo  String?
-  proofUrl         String?
-  reportedAt       DateTime?
-  confirmedAt      DateTime?
+  paymentId       String    @id @default(uuid())
+  orderId         String
+  companyId       String
+  userId          String
+  grossAmount     Float
+  platformFee     Float
+  netAmount       Float
+  paymentStatus   String    @default("PENDING")
+  bankReferenceNo String?
+  proofUrl        String?
+  reportedAt      DateTime?
+  confirmedAt     DateTime?
 
-  order            Order    @relation(fields: [orderId], references: [orderId])
-  company          Company  @relation(fields: [companyId], references: [companyId])
-  user             User     @relation(fields: [userId], references: [user_id])
-  transactions     Transaction[]
+  order        Order         @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  company      Company       @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  transactions Transaction[]
 }
 
 model BankDetails {
-  accountNumber   String          @id
-  userId          String
-  accountHolder   String
-  ifsc            String
-  accountType     BankAccountType
+  id            String @id @default(uuid())
+  userId        String @unique
+  accountHolder String
+  bankName      String
+  accountNumber String
+  ifsc          String
 
-  user            User            @relation(fields: [userId], references: [user_id])
-  transactions    Transaction[]
+  user         User          @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  transactions Transaction[]
 }
 
 model Transaction {
-  transactionId   String       @id @default(uuid())
-  accountNumber   String
-  paymentId       String
+  transactionId String @id @default(uuid())
+  bankDetailsId String
+  paymentId     String
 
-  bankDetails     BankDetails  @relation(fields: [accountNumber], references: [accountNumber])
-  payment         Payment      @relation(fields: [paymentId], references: [paymentId])
+  bankDetails BankDetails @relation(fields: [bankDetailsId], references: [id], onDelete: Cascade)
+  payment     Payment     @relation(fields: [paymentId], references: [paymentId], onDelete: Cascade)
+}
+
+model Otp {
+  otpId     String   @id @default(uuid())
+  userId    String
+  code      String
+  type      String
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+}
+
+model Kyc {
+  kycId      String   @id @default(uuid())
+  userId     String   @unique
+  docType    String
+  docNo      String   @unique
+  frontImage String
+  backImage  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
 }
