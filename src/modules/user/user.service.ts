@@ -1,15 +1,28 @@
 import prisma from "../../config/prisma";
 import cloudinary from "../../lib/cloudinary";
 
-export const submitKYC = async (userId: string, file: any, aadhar: string) => {
+export const uploadKycService = async (
+  userId: string,
+  file: any,
+  docNo: string
+) => {
+  // Check if KYC already exists
+  const existingKyc = await prisma.kyc.findUnique({
+    where: { userId },
+  });
+
+  if (existingKyc) {
+    throw new Error("KYC already submitted");
+  }
 
   const upload = await cloudinary.uploader.upload(file.path);
 
   return prisma.kyc.create({
     data: {
       userId,
-      aadharNumber: aadhar,
-      aadharImage: upload.secure_url,
+      docType: "AADHAR",
+      docNo,
+      frontImage: upload.secure_url,
     },
   });
 };

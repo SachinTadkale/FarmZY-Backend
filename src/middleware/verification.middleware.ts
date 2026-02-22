@@ -2,7 +2,7 @@ import prisma from "../config/prisma";
 
 export const verifiedOnly = async (req: any, res: any, next: any) => {
   const user = await prisma.user.findUnique({
-    where: { user_id: req.user.user_id },
+    where: { user_id: req.user.userId }, // ✅ fixed
   });
 
   if (!user) {
@@ -11,7 +11,7 @@ export const verifiedOnly = async (req: any, res: any, next: any) => {
     });
   }
 
-  if (user.verificationStatus !== "VERIFIED") {
+  if (user.verificationStatus !== "APPROVED") { // ✅ consistent
     return res.status(403).json({
       message: "Account verification required. Please wait for approval.",
     });

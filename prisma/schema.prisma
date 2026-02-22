@@ -14,14 +14,17 @@ generator client {
 model User {
   user_id            String   @id @default(uuid())
   name               String
-  phone_no           String
+  phone_no           String   @unique
   password           String
   address            String
-  email              String   @unique
+  email              String?  @unique
+  gender             String?
   role               String   @default("USER")
   verificationStatus String   @default("PENDING")
+  registrationStep   Int      @default(1)
   createdAt          DateTime @default(now())
 
+  farmDetails   FarmDetails?
   listings      MarketListing[]
   notifications Notification[]
   payments      Payment[]
@@ -29,6 +32,18 @@ model User {
   products      Product[]
   otps          Otp[]
   kyc           Kyc?
+}
+
+model FarmDetails {
+  id       String @id @default(uuid())
+  userId   String @unique
+  state    String
+  district String
+  village  String
+  pincode  String
+  landArea Float?
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
 }
 
 model Company {
@@ -52,7 +67,7 @@ model Inventory {
   stockWeight Float
   stockPrice  Float
 
-  company Company @relation(fields: [companyId], references: [companyId])
+  company Company @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
 }
 
 model Product {
@@ -63,7 +78,7 @@ model Product {
   productImage String?
   userId       String
 
-  user     User            @relation(fields: [userId], references: [user_id])
+  user     User            @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   listings MarketListing[]
 }
 
@@ -75,8 +90,8 @@ model MarketListing {
   status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
 
-  seller  User    @relation(fields: [sellerId], references: [user_id])
-  product Product @relation(fields: [productId], references: [productId])
+  seller  User    @relation(fields: [sellerId], references: [user_id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
   orders  Order[]
 }
 
@@ -89,8 +104,8 @@ model Order {
   orderStatus   String   @default("CREATED")
   createdAt     DateTime @default(now())
 
-  listing  MarketListing @relation(fields: [listingId], references: [listingId])
-  company  Company       @relation(fields: [companyId], references: [companyId])
+  listing  MarketListing @relation(fields: [listingId], references: [listingId], onDelete: Cascade)
+  company  Company       @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
   payments Payment[]
 }
 
@@ -100,7 +115,7 @@ model Notification {
   message   String
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [user_id])
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
 }
 
 model Payment {
@@ -117,30 +132,31 @@ model Payment {
   reportedAt      DateTime?
   confirmedAt     DateTime?
 
-  order        Order         @relation(fields: [orderId], references: [orderId])
-  company      Company       @relation(fields: [companyId], references: [companyId])
-  user         User          @relation(fields: [userId], references: [user_id])
+  order        Order         @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  company      Company       @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   transactions Transaction[]
 }
 
 model BankDetails {
-  accountNumber String @id
-  userId        String
+  id            String @id @default(uuid())
+  userId        String @unique
   accountHolder String
+  bankName      String
+  accountNumber String
   ifsc          String
-  accountType   String
 
-  user         User          @relation(fields: [userId], references: [user_id])
+  user         User          @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   transactions Transaction[]
 }
 
 model Transaction {
   transactionId String @id @default(uuid())
-  accountNumber String
+  bankDetailsId String
   paymentId     String
 
-  bankDetails BankDetails @relation(fields: [accountNumber], references: [accountNumber])
-  payment     Payment     @relation(fields: [paymentId], references: [paymentId])
+  bankDetails BankDetails @relation(fields: [bankDetailsId], references: [id], onDelete: Cascade)
+  payment     Payment     @relation(fields: [paymentId], references: [paymentId], onDelete: Cascade)
 }
 
 model Otp {
@@ -152,15 +168,17 @@ model Otp {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [user_id])
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
 }
 
 model Kyc {
-  kycId        String   @id @default(uuid())
-  userId       String   @unique
-  aadharNumber String   @unique
-  aadharImage  String
-  createdAt    DateTime @default(now())
+  kycId      String   @id @default(uuid())
+  userId     String   @unique
+  docType    String
+  docNo      String   @unique
+  frontImage String
+  backImage  String?
+  createdAt  DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [user_id])
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
 }

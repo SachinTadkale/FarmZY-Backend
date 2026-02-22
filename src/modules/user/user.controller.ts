@@ -1,17 +1,31 @@
-import { submitKYC } from "./user.service";
+import { uploadKycService } from "./user.service";
 
 export const uploadKYC = async (req: any, res: any) => {
-  const userId = req.user.id;
+  try {
+    const userId = req.user.userId;
 
-  const result = await submitKYC(
-    userId,
-    req.file,
-    req.body.aadharNumber
-  );
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Document image is required",
+      });
+    }
 
-  res.json({
-    success: true,
-    message: "KYC submitted successfully",
-    data: result,
-  });
+    const result = await uploadKycService(
+      userId,
+      req.file,
+      req.body.docNo
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "KYC submitted successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };

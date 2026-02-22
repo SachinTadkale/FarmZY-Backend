@@ -1,30 +1,36 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { adminOnly } from "../../middleware/admin.middleware";
-import { approveUser, getPendingUsers, rejectUser } from "./admin.controller";
+import {
+  approveUser,
+  getPendingUsers,
+  rejectUser,
+} from "./admin.controller";
 
 const router = Router();
 
+// Get all pending KYC users
 router.get(
-  "/pending-kyc",
+  "/users/pending-kyc",
   authMiddleware,
   adminOnly,
   getPendingUsers
 );
 
+// Approve user
 router.patch(
-  "/verify/:id",
+  "/users/:id/approve",
   authMiddleware,
   adminOnly,
   approveUser
 );
 
+// Reject user
 router.patch(
-  "/reject/:id",
+  "/users/:id/reject",
   authMiddleware,
   adminOnly,
   rejectUser
 );
-
 
 export default router;

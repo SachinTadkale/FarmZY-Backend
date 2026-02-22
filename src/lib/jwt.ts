@@ -1,14 +1,27 @@
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import { UserRole } from "@prisma/client";
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
-export const generateToken = (payload: object): string => {
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not defined");
+}
 
-  if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined");
-  }
+//////////////////////////////////////
+// TOKEN PAYLOAD TYPE
+//////////////////////////////////////
 
+export type JwtPayload = {
+  userId: string;
+  role: UserRole;
+};
+
+//////////////////////////////////////
+// GENERATE TOKEN
+//////////////////////////////////////
+
+export const generateToken = (payload: JwtPayload): string => {
   const options: SignOptions = {
     expiresIn: JWT_EXPIRES_IN as SignOptions["expiresIn"],
   };
@@ -16,6 +29,10 @@ export const generateToken = (payload: object): string => {
   return jwt.sign(payload, JWT_SECRET, options);
 };
 
-export const verifyToken = (token: string) => {
-  return jwt.verify(token, JWT_SECRET);
+//////////////////////////////////////
+// VERIFY TOKEN
+//////////////////////////////////////
+
+export const verifyToken = (token: string): JwtPayload => {
+  return jwt.verify(token, JWT_SECRET) as JwtPayload;
 };

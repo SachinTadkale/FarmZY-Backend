@@ -1,8 +1,21 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { verifiedOnly } from "../../middleware/verification.middleware";
+import { uploadKYC } from "./user.controller";
+import { upload } from "../upload/upload.middleware";
 
 const router = Router();
+
+/**
+ * Upload KYC
+ * POST /api/user/upload-kyc
+ */
+router.post(
+  "/upload-kyc",
+  authMiddleware,
+  upload.single("document"), // field name in Postman
+  uploadKYC
+);
 
 /**
  * User Dashboard

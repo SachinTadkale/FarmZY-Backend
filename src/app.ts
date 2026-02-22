@@ -6,6 +6,9 @@ import morgan from "morgan";
 import authRoutes from "./modules/auth/auth.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import userRoutes from "./modules/user/user.routes";
+import farmRoutes from "./modules/farm/farm.routes";
+import bankRoutes from "./modules/bank/bank.routes";
+import kycRoutes from "./modules/kyc/kyc.routes";
 
 const app = express();
 
@@ -19,6 +22,10 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/farm", farmRoutes);
+app.use("/api/bank", bankRoutes);
+app.use("/api/kyc", kycRoutes);
+
 
 /* ---------------- HEALTH CHECK ---------------- */
 
